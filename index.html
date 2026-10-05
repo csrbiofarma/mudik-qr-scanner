@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Scanner QR Mudik Bio Farma</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1220;color:#fff;font-family:Arial,sans-serif}
+.page{max-width:620px;margin:0 auto;padding:16px}
+.card{background:#111827;border:1px solid #263244;border-radius:18px;padding:16px}
+h1{font-size:20px;margin:0 0 5px}
+.sub{font-size:13px;color:#b7c1d1;line-height:1.5}
+#reader{width:100%;margin:16px auto 10px;border-radius:16px;overflow:hidden;background:#000}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+button{border:0;border-radius:10px;padding:12px 15px;font-weight:700;cursor:pointer}
+.primary{background:#16a34a;color:#fff}.secondary{background:#273449;color:#fff}
+.status{margin-top:12px;font-weight:700;font-size:14px}
+.result{margin-top:12px;padding:13px;border-radius:12px;background:#10251a;border:1px solid #23633c}
+.warn{background:#2b2410;border-color:#80651b}
+.err{background:#2b1414;border-color:#7f2d2d}
+.big{font-size:20px;font-weight:800;margin:4px 0}
+.small{font-size:12px;color:#b7c1d1;line-height:1.5}
+@media(max-width:500px){.page{padding:10px}h1{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="card">
+    <h1>📷 Scanner QR — Mudik Gratis Bio Farma</h1>
+    <div class="sub">Arahkan QR tiket peserta ke kamera. QR akan terbaca otomatis.</div>
+    <div id="reader"></div>
+    <div class="actions">
+      <button id="start" class="primary" type="button">▶ Mulai Kamera</button>
+      <button id="stop" class="secondary" type="button" disabled>■ Stop</button>
+      <button id="switch" class="secondary" type="button" disabled>🔄 Ganti Kamera</button>
+    </div>
+    <div id="status" class="status">Kamera belum aktif.</div>
+    <div id="result"></div>
+  </div>
+</div>
+<script>
+let scanner=null;
+let cameras=[];
+let cameraIndex=0;
+let running=false;
+let lastText='';
+let lastTime=0;
+
+function setStatus(text){document.getElementById('status').textContent=text}
+function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]})}
+function result(cls,title,msg){document.getElementById('result').innerHTML='<div class="result '+cls+'"><strong>'+esc(title)+'</strong><div class="small" style="margin-top:4px">'+esc(msg)+'</div></div>'}
+
+async function getCameras(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    throw new Error('Perangkat/browser tidak mendukung akses kamera live.');
+  }
+  const temp=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+  temp.getTracks().forEach(function(t){t.stop()});
+  const list=await Html5Qrcode.getCameras();
+  cameras=list||[];
+  if(!cameras.length)throw new Error('Kamera tidak ditemukan.');
+  const back=cameras.findIndex(function(c){return /back|rear|environment|belakang/i.test(c.label||'')});
+  cameraIndex=back>=0?back:0;
+  document.getElementById('switch').disabled=cameras.length<2;
+}
+
+async function startCamera(){
+  if(running)return;
+  try{
+    setStatus('Meminta akses kamera...');
+    await getCameras();
+    if(scanner){try{await scanner.stop()}catch(e){}try{scanner.clear()}catch(e){}}
+    scanner=new Html5Qrcode('reader');
+    const camera=cameras[cameraIndex].id;
+    await scanner.start(camera,{fps:10,qrbox:{width:270,height:270}},onScanSuccess,function(){});
+    running=true;
+    document.getElementById('start').disabled=true;
+    document.getElementById('stop').disabled=false;
+    setStatus('🟢 Kamera aktif — arahkan QR tiket ke kotak scan.');
+  }catch(e){
+    running=false;
+    document.getElementById('start').disabled=false;
+    document.getElementById('stop').disabled=true;
+    result('err','❌ Kamera gagal dibuka',e && e.message ? e.message : 'Pastikan izin kamera diberikan.');
+    setStatus('Kamera belum aktif.');
+  }
+}
+
+async function stopCamera(){
+  running=false;
+  if(scanner){try{await scanner.stop()}catch(e){}try{scanner.clear()}catch(e){}}
+  document.getElementById('start').disabled=false;
+  document.getElementById('stop').disabled=true;
+  setStatus('Scanner berhenti.');
+}
+
+async function switchCamera(){
+  if(cameras.length<2)return;
+  cameraIndex=(cameraIndex+1)%cameras.length;
+  if(!running)return;
+  try{
+    if(scanner){try{await scanner.stop()}catch(e){}}
+    await scanner.start(cameras[cameraIndex].id,{fps:10,qrbox:{width:270,height:270}},onScanSuccess,function(){});
+    setStatus('🟢 Kamera '+(cameraIndex+1)+' aktif.');
+  }catch(e){result('err','❌ Gagal mengganti kamera',e.message||'Tidak dapat membuka kamera.');}
+}
+
+function onScanSuccess(decodedText){
+  const text=String(decodedText||'').trim();
+  if(!text)return;
+  const now=Date.now();
+  if(text===lastText && now-lastTime<3000)return;
+  lastText=text;
+  lastTime=now;
+  result('','🔎 QR TERBACA','Mengirim QR ke halaman check-in...');
+  if(window.opener && !window.opener.closed){
+    window.opener.postMessage({type:'MUDIK_QR_SCANNED',token:text},'*');
+    setStatus('✅ QR terkirim. Tunggu hasil validasi...');
+  }else{
+    result('err','❌ Halaman Check-in tidak ditemukan','Buka scanner dari tombol Mulai Scan pada halaman Check-in.');
+  }
+}
+
+document.getElementById('start').addEventListener('click',startCamera);
+document.getElementById('stop').addEventListener('click',stopCamera);
+document.getElementById('switch').addEventListener('click',switchCamera);
+window.addEventListener('load',function(){startCamera()});
+</script>
+</body>
+</html>
