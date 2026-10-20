@@ -1,132 +1,407 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Scanner QR Mudik Bio Farma</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scanner Mudik Gratis Bio Farma 2027</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1220;color:#fff;font-family:Arial,sans-serif}
-.page{max-width:620px;margin:0 auto;padding:16px}
-.card{background:#111827;border:1px solid #263244;border-radius:18px;padding:16px}
-h1{font-size:20px;margin:0 0 5px}
-.sub{font-size:13px;color:#b7c1d1;line-height:1.5}
-#reader{width:100%;margin:16px auto 10px;border-radius:16px;overflow:hidden;background:#000}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-button{border:0;border-radius:10px;padding:12px 15px;font-weight:700;cursor:pointer}
-.primary{background:#16a34a;color:#fff}.secondary{background:#273449;color:#fff}
-.status{margin-top:12px;font-weight:700;font-size:14px}
-.result{margin-top:12px;padding:13px;border-radius:12px;background:#10251a;border:1px solid #23633c}
-.warn{background:#2b2410;border-color:#80651b}
-.err{background:#2b1414;border-color:#7f2d2d}
-.big{font-size:20px;font-weight:800;margin:4px 0}
+.page{max-width:1000px;margin:auto;padding:18px}
+.card{background:#111827;border:1px solid #263244;border-radius:16px;padding:18px;margin-bottom:16px}
+h1{font-size:23px;margin:0 0 8px}
+h2,h3{margin-top:0}
+.sub{color:#b7c1d1;font-size:14px;line-height:1.5}
+label{display:block;margin:12px 0 6px;font-size:13px;font-weight:bold}
+input,select,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #475569;background:#0b1220;color:#fff;font:inherit}
+button{border:0;border-radius:9px;padding:12px 15px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.primary{background:#16a34a;color:white}
+.secondary{background:#26364d;color:white}
+.danger{background:#b42318;color:white}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.row button{flex:1}
+.hidden{display:none!important}
+.grid{display:grid;grid-template-columns:1fr 1.2fr;gap:16px}
+#reader{width:100%;max-width:520px;margin:12px auto;overflow:hidden;border-radius:12px}
+#reader video{width:100%!important}
+.status{font-weight:bold;font-size:14px;margin-top:12px}
+.result{padding:14px;border-radius:10px;margin-top:12px;line-height:1.6;overflow-wrap:anywhere}
+.ok{background:#064e3b;border:1px solid #10b981}
+.warn{background:#78350f;border:1px solid #f59e0b}
+.err{background:#7f1d1d;border:1px solid #ef4444}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.stat{padding:12px;border-radius:10px;background:#0b1220;border:1px solid #263244}
+.num{font-size:25px;font-weight:bold;margin-top:5px}
 .small{font-size:12px;color:#b7c1d1;line-height:1.5}
-@media(max-width:500px){.page{padding:10px}h1{font-size:18px}}
+.tablewrap{overflow:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;min-width:540px}
+td,th{padding:9px;border-bottom:1px solid #263244;text-align:left;font-size:13px}
+th{color:#cbd5e1}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}h1{font-size:20px}}
 </style>
 </head>
 <body>
 <div class="page">
   <div class="card">
-    <h1>📷 Scanner QR — Mudik Gratis Bio Farma</h1>
-    <div class="sub">Arahkan QR tiket peserta ke kamera. QR akan terbaca otomatis.</div>
-    <div id="reader"></div>
-    <div class="actions">
-      <button id="start" class="primary" type="button">▶ Mulai Kamera</button>
-      <button id="stop" class="secondary" type="button" disabled>■ Stop</button>
-      <button id="switch" class="secondary" type="button" disabled>🔄 Ganti Kamera</button>
-    </div>
-    <div id="status" class="status">Kamera belum aktif.</div>
-    <div id="result"></div>
+    <h1>📷 Scanner QR — Mudik Gratis Bio Farma 2027</h1>
+    <div class="sub">Login petugas, validasi tiket, dan rekap keberangkatan.</div>
   </div>
+
+  <section id="loginPage" class="card">
+    <h2>🔐 Login Petugas</h2>
+    <label>Username</label>
+    <input id="username" value="admin" autocomplete="username">
+    <label>Password admin</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn" class="primary" style="width:100%;margin-top:14px" onclick="login()">Masuk</button>
+    <div id="loginMessage" class="status"></div>
+  </section>
+
+  <section id="appPage" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h3>🚌 Rute Keberangkatan</h3>
+        <label>Pilih rute</label>
+        <select id="routeSelect" onchange="routeChanged()">
+          <option value="">Memuat rute...</option>
+        </select>
+        <div id="routeInfo" class="sub" style="margin-top:10px"></div>
+        <button class="secondary" style="margin-top:12px;width:100%" onclick="loadRoutes()">↻ Refresh Rute</button>
+
+        <label>Catatan check-in (opsional)</label>
+        <textarea id="catatan" rows="3" placeholder="Catatan tambahan"></textarea>
+        <div class="row">
+          <button class="secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📸 Pemindaian QR Tiket</h3>
+        <div class="sub">Pilih rute, aktifkan kamera, lalu arahkan QR tiket ke bingkai.</div>
+        <div id="reader"></div>
+        <div class="row">
+          <button id="startBtn" class="primary" onclick="startScanner()">▶ Mulai Kamera</button>
+          <button id="stopBtn" class="secondary" onclick="stopScanner()" disabled>Ⅱ Stop</button>
+        </div>
+        <div id="scanStatus" class="status">Pilih rute sebelum memulai.</div>
+        <div id="result"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📊 Rekap Keberangkatan</h3>
+      <div id="summaryInfo" class="sub">Pilih rute untuk melihat rekap.</div>
+      <div class="stats">
+        <div class="stat"><div class="small">Total Tiket</div><div class="num" id="total">0</div></div>
+        <div class="stat"><div class="small">Hadir</div><div class="num" id="hadir">0</div></div>
+        <div class="stat"><div class="small">Belum Check-in</div><div class="num" id="belum">0</div></div>
+        <div class="stat"><div class="small">Batal</div><div class="num" id="batal">0</div></div>
+      </div>
+      <div id="busSummary" class="tablewrap"></div>
+    </div>
+
+    <div class="card">
+      <h3>🕒 Check-in Terbaru</h3>
+      <div id="recent" class="tablewrap sub">Belum ada data.</div>
+    </div>
+  </section>
 </div>
+
 <script>
-let scanner=null;
-let cameras=[];
-let cameraIndex=0;
-let running=false;
-let lastText='';
-let lastTime=0;
+const API = "https://mudik-qr-api.csrbiofarma.workers.dev";
+let token = "";
+let scanner = null;
+let scannerRunning = false;
+let processing = false;
+let lastText = "";
+let lastTime = 0;
 
-function setStatus(text){document.getElementById('status').textContent=text}
-function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]})}
-function result(cls,title,msg){document.getElementById('result').innerHTML='<div class="result '+cls+'"><strong>'+esc(title)+'</strong><div class="small" style="margin-top:4px">'+esc(msg)+'</div></div>'}
+async function api(action, data = {}) {
+  const response = await fetch(API, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    cache: "no-store",
+    body: JSON.stringify({
+      action,
+      token,
+      ...data
+    })
+  });
 
-async function getCameras(){
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    throw new Error('Perangkat/browser tidak mendukung akses kamera live.');
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Permintaan API gagal.");
   }
-  const temp=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-  temp.getTracks().forEach(function(t){t.stop()});
-  const list=await Html5Qrcode.getCameras();
-  cameras=list||[];
-  if(!cameras.length)throw new Error('Kamera tidak ditemukan.');
-  const back=cameras.findIndex(function(c){return /back|rear|environment|belakang/i.test(c.label||'')});
-  cameraIndex=back>=0?back:0;
-  document.getElementById('switch').disabled=cameras.length<2;
+  return result;
 }
 
-async function startCamera(){
-  if(running)return;
-  try{
-    setStatus('Meminta akses kamera...');
-    await getCameras();
-    if(scanner){try{await scanner.stop()}catch(e){}try{scanner.clear()}catch(e){}}
-    scanner=new Html5Qrcode('reader');
-    const camera=cameras[cameraIndex].id;
-    await scanner.start(camera,{fps:10,qrbox:{width:270,height:270}},onScanSuccess,function(){});
-    running=true;
-    document.getElementById('start').disabled=true;
-    document.getElementById('stop').disabled=false;
-    setStatus('🟢 Kamera aktif — arahkan QR tiket ke kotak scan.');
-  }catch(e){
-    running=false;
-    document.getElementById('start').disabled=false;
-    document.getElementById('stop').disabled=true;
-    result('err','❌ Kamera gagal dibuka',e && e.message ? e.message : 'Pastikan izin kamera diberikan.');
-    setStatus('Kamera belum aktif.');
+function message(id, text, color = "") {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  if (color) el.style.color = color;
+}
+
+async function login() {
+  const btn = document.getElementById("loginBtn");
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!username || !password) {
+    message("loginMessage", "Username dan password wajib diisi.", "#fca5a5");
+    return;
   }
-}
 
-async function stopCamera(){
-  running=false;
-  if(scanner){try{await scanner.stop()}catch(e){}try{scanner.clear()}catch(e){}}
-  document.getElementById('start').disabled=false;
-  document.getElementById('stop').disabled=true;
-  setStatus('Scanner berhenti.');
-}
+  btn.disabled = true;
+  message("loginMessage", "Memeriksa login...");
 
-async function switchCamera(){
-  if(cameras.length<2)return;
-  cameraIndex=(cameraIndex+1)%cameras.length;
-  if(!running)return;
-  try{
-    if(scanner){try{await scanner.stop()}catch(e){}}
-    await scanner.start(cameras[cameraIndex].id,{fps:10,qrbox:{width:270,height:270}},onScanSuccess,function(){});
-    setStatus('🟢 Kamera '+(cameraIndex+1)+' aktif.');
-  }catch(e){result('err','❌ Gagal mengganti kamera',e.message||'Tidak dapat membuka kamera.');}
-}
+  try {
+    const r = await api("login", {username, password});
 
-function onScanSuccess(decodedText){
-  const text=String(decodedText||'').trim();
-  if(!text)return;
-  const now=Date.now();
-  if(text===lastText && now-lastTime<3000)return;
-  lastText=text;
-  lastTime=now;
-  result('','🔎 QR TERBACA','Mengirim QR ke halaman check-in...');
-  if(window.opener && !window.opener.closed){
-    window.opener.postMessage({type:'MUDIK_QR_SCANNED',token:text},'*');
-    setStatus('✅ QR terkirim. Tunggu hasil validasi...');
-  }else{
-    result('err','❌ Halaman Check-in tidak ditemukan','Buka scanner dari tombol Mulai Scan pada halaman Check-in.');
+    if (!r.success || !r.token) {
+      throw new Error(r.message || "Login gagal.");
+    }
+
+    token = r.token;
+    document.getElementById("password").value = "";
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("appPage").classList.remove("hidden");
+    message("scanStatus", "Login berhasil. Pilih rute terlebih dahulu.");
+    await loadRoutes();
+  } catch (e) {
+    message("loginMessage", e.message || "Tidak dapat menghubungi API.", "#fca5a5");
+  } finally {
+    btn.disabled = false;
   }
 }
 
-document.getElementById('start').addEventListener('click',startCamera);
-document.getElementById('stop').addEventListener('click',stopCamera);
-document.getElementById('switch').addEventListener('click',switchCamera);
-window.addEventListener('load',function(){startCamera()});
+async function loadRoutes() {
+  const select = document.getElementById("routeSelect");
+  select.innerHTML = '<option value="">Memuat rute...</option>';
+
+  try {
+    const r = await api("routes");
+
+    if (!r.success) throw new Error(r.message || "Gagal memuat rute.");
+
+    select.innerHTML = '<option value="">-- Pilih Rute --</option>';
+
+    (r.routes || []).forEach(route => {
+      const option = document.createElement("option");
+      option.value = route.routeId;
+      option.textContent =
+        `${route.routeId} · ${route.asal} → ${route.tujuan} · ${route.tanggal} · ${route.tiket} tiket`;
+      select.appendChild(option);
+    });
+
+    if (!(r.routes || []).length) {
+      message("routeInfo", "Belum ada rute yang memiliki tiket.");
+    }
+  } catch (e) {
+    select.innerHTML = '<option value="">Gagal memuat rute</option>';
+    showResult("err", e.message);
+  }
+}
+
+function routeChanged() {
+  if (scannerRunning) stopScanner();
+
+  const routeId = document.getElementById("routeSelect").value;
+  document.getElementById("routeInfo").textContent = "";
+
+  if (routeId) refreshReport();
+  else clearReport();
+}
+
+async function refreshReport() {
+  const routeId = document.getElementById("routeSelect").value;
+  if (!routeId) return;
+
+  try {
+    const [s, r] = await Promise.all([
+      api("summary", {routeId}),
+      api("recent", {routeId, limit:20})
+    ]);
+
+    if (!s.success) throw new Error(s.message || "Gagal memuat rekap.");
+
+    const d = s.summary;
+    document.getElementById("summaryInfo").textContent =
+      `${d.rute} · ${d.tanggalBerangkat} · ${d.jamBerangkat}`;
+    document.getElementById("routeInfo").textContent =
+      `${d.routeId} · ${d.tanggalBerangkat} · ${d.jamBerangkat}`;
+
+    document.getElementById("total").textContent = d.totalTiket || 0;
+    document.getElementById("hadir").textContent = d.hadir || 0;
+    document.getElementById("belum").textContent = d.belumHadir || 0;
+    document.getElementById("batal").textContent = d.batal || 0;
+
+    const buses = d.buses || [];
+    document.getElementById("busSummary").innerHTML = buses.length
+      ? `<table><thead><tr><th>Bus</th><th>Total</th><th>Hadir</th><th>Belum</th><th>Batal</th></tr></thead><tbody>${
+          buses.map(b => `<tr><td>${esc(b.nomorBus || b.busId)}</td><td>${b.total}</td><td>${b.hadir}</td><td>${b.belum}</td><td>${b.batal}</td></tr>`).join("")
+        }</tbody></table>`
+      : '<div class="sub">Belum ada data bus.</div>';
+
+    const rows = r.rows || [];
+    document.getElementById("recent").innerHTML = rows.length
+      ? `<table><thead><tr><th>Waktu</th><th>Nama</th><th>Tiket</th><th>Bus</th><th>Kursi</th><th>Petugas</th></tr></thead><tbody>${
+          rows.map(x => `<tr><td>${esc(x.waktu)}</td><td>${esc(x.nama)}</td><td>${esc(x.ticketId)}</td><td>${esc(x.busId)}</td><td>${esc(x.nomorKursi || "TANPA KURSI")}</td><td>${esc(x.petugas)}</td></tr>`).join("")
+        }</tbody></table>`
+      : '<div class="sub">Belum ada peserta check-in.</div>';
+  } catch (e) {
+    showResult("err", e.message || "Gagal memuat rekap.");
+  }
+}
+
+function clearReport() {
+  ["total","hadir","belum","batal"].forEach(id => {
+    document.getElementById(id).textContent = "0";
+  });
+  document.getElementById("summaryInfo").textContent = "Pilih rute untuk melihat rekap.";
+  document.getElementById("busSummary").innerHTML = "";
+  document.getElementById("recent").textContent = "Pilih rute untuk melihat data.";
+}
+
+async function startScanner() {
+  if (scannerRunning || processing) return;
+
+  if (!document.getElementById("routeSelect").value) {
+    message("scanStatus", "Pilih rute keberangkatan terlebih dahulu.");
+    return;
+  }
+
+  if (typeof Html5Qrcode === "undefined") {
+    showResult("err", "Library scanner tidak termuat. Periksa koneksi internet.");
+    return;
+  }
+
+  try {
+    if (!scanner) scanner = new Html5Qrcode("reader");
+
+    message("scanStatus", "Meminta izin kamera...");
+    document.getElementById("startBtn").disabled = true;
+
+    await scanner.start(
+      {facingMode: "environment"},
+      {
+        fps: 10,
+        qrbox: (w, h) => {
+          const side = Math.floor(Math.min(w, h) * 0.72);
+          return {width: side, height: side};
+        }
+      },
+      decoded => onScan(decoded),
+      () => {}
+    );
+
+    scannerRunning = true;
+    document.getElementById("stopBtn").disabled = false;
+    message("scanStatus", "🟢 Kamera aktif — arahkan QR tiket ke bingkai.");
+  } catch (e) {
+    scannerRunning = false;
+    document.getElementById("startBtn").disabled = false;
+    document.getElementById("stopBtn").disabled = true;
+    showResult("err", "Kamera gagal dibuka. Pastikan izin kamera diberikan. " + (e.message || ""));
+  }
+}
+
+async function stopScanner() {
+  if (scanner && scannerRunning) {
+    try { await scanner.stop(); } catch (e) {}
+  }
+  scannerRunning = false;
+  document.getElementById("startBtn").disabled = false;
+  document.getElementById("stopBtn").disabled = true;
+  message("scanStatus", "Scanner berhenti.");
+}
+
+async function onScan(decodedText) {
+  if (!scannerRunning || processing) return;
+
+  const now = Date.now();
+  if (decodedText === lastText && now - lastTime < 2500) return;
+  lastText = decodedText;
+  lastTime = now;
+  processing = true;
+
+  message("scanStatus", "QR terbaca. Memvalidasi tiket...");
+  const routeId = document.getElementById("routeSelect").value;
+
+  try {
+    const r = await api("checkin", {
+      scanValue: decodedText,
+      routeId,
+      catatan: document.getElementById("catatan").value.trim()
+    });
+
+    const d = r.result || {};
+
+    if (d.duplicate) {
+      showResult("warn", d.message || "Tiket sudah check-in.", d);
+    } else if (d.success) {
+      showResult("ok", d.message || "Check-in berhasil.", d);
+    } else {
+      showResult("err", d.message || r.message || "Check-in ditolak.", d);
+    }
+
+    await refreshReport();
+  } catch (e) {
+    showResult("err", e.message || "Gagal memvalidasi tiket.");
+  } finally {
+    processing = false;
+    message("scanStatus", scannerRunning
+      ? "🟢 Siap membaca QR berikutnya."
+      : "Scanner berhenti.");
+  }
+}
+
+function showResult(type, text, data) {
+  const box = document.getElementById("result");
+  box.className = "result " + type;
+  box.replaceChildren();
+
+  const title = document.createElement("strong");
+  title.textContent = type === "ok" ? "✅ CHECK-IN BERHASIL"
+    : type === "warn" ? "⚠ PERHATIAN" : "❌ CHECK-IN GAGAL";
+  box.appendChild(title);
+
+  const msg = document.createElement("div");
+  msg.textContent = text || "";
+  box.appendChild(msg);
+
+  if (data) {
+    const details = document.createElement("div");
+    details.className = "small";
+    details.textContent =
+      `Nama: ${data.nama || "-"} · Tiket: ${data.ticketId || "-"} · Bus: ${data.nomorBus || "-"} · Kursi: ${data.nomorKursi || "TANPA KURSI"}`;
+    box.appendChild(details);
+  }
+}
+
+function esc(value) {
+  return String(value == null ? "" : value).replace(/[&<>'"]/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;"
+  })[c]);
+}
+
+async function logout() {
+  await stopScanner();
+  try { if (token) await api("logout"); } catch (e) {}
+  token = "";
+  document.getElementById("appPage").classList.add("hidden");
+  document.getElementById("loginPage").classList.remove("hidden");
+  document.getElementById("password").value = "";
+  document.getElementById("result").innerHTML = "";
+  message("loginMessage", "");
+}
+
+document.getElementById("password").addEventListener("keydown", e => {
+  if (e.key === "Enter") login();
+});
 </script>
 </body>
 </html>
